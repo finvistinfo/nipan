@@ -396,11 +396,8 @@
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-slate-700 mb-1" for="branch">Branch / Specialization *</label>
-                                <select id="branch" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
-                                    <option value="" disabled selected>Select Branch</option>
-                                    <!-- Populated by JS -->
-                                </select>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="branch">Branch *</label>
+                                <input type="text" id="branch" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400" placeholder="Enter your branch">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1" for="subject">Subject / Course Title *</label>
@@ -575,7 +572,7 @@
             // Place your logo file in the assets folder.
             // The app will automatically load it for previews and PDFs.
             // ==========================================
-            logo: "co.png",
+            logo: "/co.png",
             loadedLogo: "", // Will hold the base64 preloaded image
             
             collegeName: "Techno College of Engineering Agartala",
@@ -694,14 +691,6 @@
         }
 
         function populateDropdowns() {
-            const branchSelect = document.getElementById('branch');
-            COLLEGE_CONFIG.branches.forEach(b => {
-                const opt = document.createElement('option');
-                opt.value = b;
-                opt.textContent = b;
-                branchSelect.appendChild(opt);
-            });
-
             const deptSelect = document.getElementById('facultyDepartment');
             COLLEGE_CONFIG.departments.forEach(d => {
                 const opt = document.createElement('option');
@@ -923,6 +912,7 @@
                                 ${data.studentId ? `<p style="margin: 0;"><strong>Student ID:</strong> ${data.studentId}</p>` : ''}
                                 <p style="margin: 0;"><strong>TU Roll No:</strong> ${safeText(data.rollNumber, 'Roll No')}</p>
                                 <p style="margin: 0;"><strong>TU Reg No:</strong> ${safeText(data.registrationNumber, 'Reg No')}</p>
+                                <p style="margin: 0;"><strong>Branch:</strong> ${safeText(data.branch, 'Branch')}</p>
                                 <p style="margin: 0;"><strong>Semester:</strong> ${safeText(data.semester, 'Sem')}</p>
                                 ${data.session ? `<p style="margin: 0;"><strong>Session:</strong> ${data.session}</p>` : ''}
                             </div>
@@ -981,6 +971,7 @@
                                     ${data.studentId ? `<tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">Student ID:</td><td>${data.studentId}</td></tr>` : ''}
                                     <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">TU Roll No:</td><td>${safeText(data.rollNumber, 'Roll No')}</td></tr>
                                     <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">TU Reg No:</td><td>${safeText(data.registrationNumber, 'Reg No')}</td></tr>
+                                    <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">Branch:</td><td>${safeText(data.branch, 'Branch')}</td></tr>
                                     <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">Semester:</td><td>${safeText(data.semester, 'Sem')}</td></tr>
                                 </tbody>
                             </table>
