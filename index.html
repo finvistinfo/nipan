@@ -1,0 +1,1390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Cover Page Maker | Professional Academic Front Pages</title>
+    <meta name="description" content="Create a professional academic front page in seconds. Free, client-side, no login required.">
+    
+    <!-- Tailwind CSS for Styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- External Libraries -->
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Times New Roman', 'Times', 'serif'], // A4 Document strict typography
+                        display: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        dark: '#0f172a',
+                        paper: '#ffffff',
+                    },
+                    boxShadow: {
+                        'paper': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0,0,0,0.05)',
+                        'paper-lg': '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0,0,0,0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Resets */
+        body {
+            margin: 0;
+            overflow-x: hidden;
+            background-color: #f8fafc;
+        }
+
+        /* Hide Scrollbar for cleaner UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+
+        /* Transitions */
+        .fade-enter {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        .fade-enter-active {
+            opacity: 1;
+            transform: translateY(0);
+            transition: opacity 400ms ease-out, transform 400ms ease-out;
+        }
+        .fade-exit {
+            opacity: 1;
+        }
+        .fade-exit-active {
+            opacity: 0;
+            transition: opacity 300ms ease-in;
+        }
+        .hidden-section {
+            display: none !important;
+        }
+
+        /* Three.js Canvas Container */
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none; /* Prevents blocking clicks on mobile */
+        }
+
+        /* A4 Document Setup */
+        #a4-preview-wrapper {
+            /* 
+              A4 exact aspect ratio: 1 : 1.414 
+              Base dimension: 210mm x 297mm
+              Using a scaled approach for the web viewer, full size for export.
+            */
+            width: 794px; /* 210mm at 96 DPI */
+            height: 1123px; /* 297mm at 96 DPI */
+            min-width: 794px; /* CRITICAL: Prevents squishing on mobile */
+            min-height: 1123px;
+            flex-shrink: 0; /* CRITICAL: Forces flexbox to respect exact A4 proportions */
+            background-color: white;
+            transform-origin: top center;
+            position: relative;
+            box-sizing: border-box;
+            /* Hide overflow to prevent template bleeding */
+            overflow: hidden;
+        }
+
+        /* A4 Templates Specific CSS */
+        .a4-template {
+            width: 100%;
+            height: 100%;
+            padding: 40px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            color: black;
+            font-family: 'Times New Roman', Times, serif;
+            background: white;
+            position: relative;
+        }
+        
+        /* Format 1 specific styles */
+        .f1-border {
+            border: 4px solid #1a1a1a;
+            padding: 30px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Format 2 specific styles */
+        .f2-border {
+            border: 2px solid #1a1a1a;
+            outline: 1px solid #1a1a1a;
+            outline-offset: -6px;
+            padding: 30px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Mobile UI & Touch Target Fixes */
+        @media (max-width: 1024px) {
+            input.live-input, select.live-input {
+                font-size: 16px !important; /* Prevents iOS auto-zoom */
+                padding-top: 0.875rem !important;
+                padding-bottom: 0.875rem !important;
+            }
+            .preview-container {
+                padding: 0.5rem !important;
+            }
+        }
+
+        /* Utility for scaling preview on small screens */
+        .preview-container {
+            overflow-x: hidden;
+            overflow-y: auto;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            background: #e2e8f0;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+
+        /* Custom Toast Notification */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .toast {
+            background-color: #1e293b;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transform: translateX(120%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .toast.show {
+            transform: translateX(0);
+        }
+        
+        /* Loader */
+        .spinner {
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            width: 20px;
+            height: 20px;
+            -webkit-animation: spin 1s linear infinite; /* Safari */
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="text-slate-800 antialiased font-sans flex flex-col min-h-screen">
+
+    <!-- ========================================== -->
+    <!-- LANDING PAGE SECTION                       -->
+    <!-- ========================================== -->
+    <main id="landing-page" class="relative w-full min-h-screen flex flex-col justify-center items-center overflow-hidden transition-opacity duration-500">
+        <!-- Three.js Background -->
+        <div id="canvas-container"></div>
+        
+        <!-- Gradient Overlay for readability -->
+        <div class="absolute inset-0 bg-gradient-to-b from-dark/80 via-dark/60 to-dark/90 z-0 pointer-events-none"></div>
+
+        <div class="relative z-10 text-center px-4 max-w-4xl mx-auto flex flex-col items-center">
+            <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 backdrop-blur-sm text-white/90 text-sm font-medium mb-8">
+                <i class="ph ph-sparkle text-blue-400"></i>
+                Free • No Login • No Server Required
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-display font-bold text-white tracking-tight mb-6 drop-shadow-lg">
+                Student <span class="text-blue-400">Cover Page</span> Maker
+            </h1>
+            
+            <p class="text-lg md:text-xl text-slate-300 font-light mb-10 max-w-2xl drop-shadow-md">
+                Create a professional academic front page in seconds. Client-side processing ensures your data stays private.
+            </p>
+            
+            <button id="btn-start" class="group relative px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-semibold text-lg rounded-xl shadow-[0_0_40px_-10px_rgba(59,130,246,0.6)] transition-all hover:scale-105 hover:shadow-[0_0_60px_-15px_rgba(59,130,246,0.8)] overflow-hidden">
+                <span class="relative z-10 flex items-center gap-2">
+                    Create Front Page <i class="ph ph-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </span>
+                <div class="absolute inset-0 h-full w-full bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            </button>
+            
+            <p class="mt-12 text-slate-400 text-sm font-medium tracking-wide">
+                Created by Nipan Chakraborty
+            </p>
+        </div>
+    </main>
+
+    <!-- ========================================== -->
+    <!-- GENERATOR INTERFACE                        -->
+    <!-- ========================================== -->
+    <div id="generator-page" class="hidden-section w-full min-h-screen bg-slate-50 flex flex-col">
+        
+        <!-- Header -->
+        <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-screen-2xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-blue-600 flex items-center justify-center text-white">
+                        <i class="ph ph-file-text text-xl"></i>
+                    </div>
+                    <h1 class="font-bold text-lg text-slate-800">Cover Page Maker</h1>
+                </div>
+                <div class="flex gap-2">
+                    <button id="btn-back-home" class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+                        Home
+                    </button>
+                    <button id="btn-reset" class="px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="ph ph-arrow-counter-clockwise"></i> Reset Form
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Layout: Form (Left/Top) and Preview (Right/Bottom) -->
+        <div class="flex-1 max-w-screen-2xl mx-auto w-full flex flex-col lg:flex-row gap-6 p-4 lg:p-6 lg:h-[calc(100vh-64px)]">
+            
+            <!-- LEFT: Form Area -->
+            <div class="w-full lg:w-[450px] xl:w-[500px] flex-shrink-0 flex flex-col gap-6 lg:overflow-y-auto pb-20 lg:pb-6 hide-scrollbar pr-1">
+                
+                <div class="bg-blue-50 text-blue-800 p-4 rounded-xl border border-blue-200 text-sm shadow-sm">
+                    <i class="ph ph-info font-bold mr-1"></i> Fill in the details below. The A4 preview updates automatically in real-time.
+                </div>
+
+                <form id="cover-form" onsubmit="event.preventDefault();" class="flex flex-col gap-6">
+                    
+                    <!-- Format Selector -->
+                    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph ph-layout"></i> Select Front Page Format
+                        </h2>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="format1" class="peer sr-only live-input" checked>
+                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2">
+                                    <div class="w-full aspect-[1/1.4] bg-white border border-slate-300 rounded shadow-sm flex flex-col p-2 gap-1">
+                                        <div class="w-full h-1 bg-slate-200"></div>
+                                        <div class="w-6 h-6 rounded-full bg-slate-200 mx-auto"></div>
+                                        <div class="w-full h-1 bg-slate-200 mt-2"></div>
+                                        <div class="flex justify-between mt-auto">
+                                            <div class="w-1/3 h-4 bg-slate-100 border border-slate-200"></div>
+                                            <div class="w-1/3 h-4 bg-slate-100 border border-slate-200"></div>
+                                        </div>
+                                    </div>
+                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700">Format 1</span>
+                                </div>
+                            </label>
+                            
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="format2" class="peer sr-only live-input">
+                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2">
+                                    <div class="w-full aspect-[1/1.4] bg-white border border-slate-300 rounded shadow-sm flex flex-col p-2 gap-1">
+                                        <div class="flex items-center gap-2 border-b border-slate-200 pb-1">
+                                            <div class="w-4 h-4 rounded-full bg-slate-200"></div>
+                                            <div class="w-full h-2 bg-slate-200"></div>
+                                        </div>
+                                        <div class="w-3/4 h-3 bg-slate-200 mx-auto mt-4"></div>
+                                        <div class="w-1/2 h-8 bg-slate-100 border border-slate-200 mx-auto mt-2"></div>
+                                    </div>
+                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700">Format 2</span>
+                                </div>
+                            </label>
+                        </div>
+                    </section>
+
+                    <!-- Personal Information -->
+                    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph ph-user"></i> Personal Information
+                        </h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="studentName">Student Name *</label>
+                                <input type="text" id="studentName" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400" placeholder="e.g. John Doe" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="studentId">Student ID</label>
+                                    <input type="text" id="studentId" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400" placeholder="e.g. S12345">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="rollNumber">TU Roll Number</label>
+                                    <input type="text" id="rollNumber" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400" placeholder="e.g. 23-01-XXXX">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="registrationNumber">TU Registration Number</label>
+                                <input type="text" id="registrationNumber" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all placeholder:text-slate-400" placeholder="e.g. 123456 of 2023-24">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Course Details -->
+                    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph ph-books"></i> Course Details
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="courseLevel">Course Level *</label>
+                                    <select id="courseLevel" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="B.Tech">B.Tech</option>
+                                        <option value="Diploma">Diploma</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="semester">Semester *</label>
+                                    <select id="semester" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="1st">1st</option>
+                                        <option value="2nd">2nd</option>
+                                        <option value="3rd">3rd</option>
+                                        <option value="4th">4th</option>
+                                        <option value="5th">5th</option>
+                                        <option value="6th">6th</option>
+                                        <option value="7th">7th</option>
+                                        <option value="8th">8th</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="branch">Branch / Specialization *</label>
+                                <select id="branch" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                    <option value="" disabled selected>Select Branch</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="subject">Subject / Course Title *</label>
+                                <input type="text" id="subject" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400" placeholder="e.g. Software Engineering">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="subjectCode">Subject Code</label>
+                                <input type="text" id="subjectCode" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400" placeholder="e.g. CS-601">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Faculty Information -->
+                    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph ph-chalkboard-teacher"></i> Faculty Information
+                        </h2>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="facultyDepartment">Faculty Department *</label>
+                                <select id="facultyDepartment" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                    <option value="" disabled selected>Select Department</option>
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+
+                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-100 space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="faculty1Name">Faculty Name *</label>
+                                    <input type="text" id="faculty1Name" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Prof. Alan Turing">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="faculty1Designation">Designation *</label>
+                                    <select id="faculty1Designation" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="Assistant Professor">Assistant Professor</option>
+                                        <option value="Associate Professor">Associate Professor</option>
+                                        <option value="Professor">Professor</option>
+                                        <option value="Lecturer">Lecturer</option>
+                                        <option value="Guest Lecturer">Guest Lecturer</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Second Faculty Toggle -->
+                            <div id="second-faculty-container" class="hidden space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-100 relative mt-4">
+                                <button type="button" id="btn-remove-faculty" class="absolute top-2 right-2 text-red-500 hover:text-red-700 text-sm font-medium px-2 py-1 flex items-center gap-1">
+                                    <i class="ph ph-x"></i> Remove
+                                </button>
+                                <div class="mt-2">
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="faculty2Name">Faculty 2 Name</label>
+                                    <input type="text" id="faculty2Name" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" placeholder="e.g. Prof. Ada Lovelace">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="faculty2Designation">Designation</label>
+                                    <select id="faculty2Designation" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                        <option value="" disabled selected>Select</option>
+                                        <option value="Assistant Professor">Assistant Professor</option>
+                                        <option value="Associate Professor">Associate Professor</option>
+                                        <option value="Professor">Professor</option>
+                                        <option value="Lecturer">Lecturer</option>
+                                        <option value="Guest Lecturer">Guest Lecturer</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button type="button" id="btn-add-faculty" class="w-full py-2 border-2 border-dashed border-slate-300 text-slate-500 rounded-lg hover:border-blue-400 hover:text-blue-600 transition-colors font-medium text-sm flex items-center justify-center gap-2">
+                                <i class="ph ph-plus-circle text-lg"></i> Add Second Faculty
+                            </button>
+                        </div>
+                    </section>
+
+                    <!-- Assignment Details -->
+                    <section class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="ph ph-calendar-check"></i> Assignment Details
+                        </h2>
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="session">Academic Session</label>
+                                    <input type="text" id="session" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none placeholder:text-slate-400" placeholder="e.g. 2027-28">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1" for="submissionDate">Submission Date *</label>
+                                    <input type="date" id="submissionDate" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1" for="submissionType">Submission Type *</label>
+                                <select id="submissionType" class="live-input w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                                    <option value="" disabled selected>Select Type</option>
+                                    <option value="Assignment-I">Assignment-I</option>
+                                    <option value="Assignment-II">Assignment-II</option>
+                                    <option value="Lab Copy">Lab Copy</option>
+                                    <option value="Laboratory Record Book">Laboratory Record Book</option>
+                                    <option value="Project Report">Project Report</option>
+                                    <option value="Practical Record">Practical Record</option>
+                                </select>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Mobile Action Buttons (Visible only on small screens) -->
+                    <div class="lg:hidden flex flex-col gap-3 mt-4 mb-8">
+                        <button type="button" id="btn-mobile-preview" class="w-full py-3 bg-slate-800 text-white rounded-xl font-medium shadow-sm flex items-center justify-center gap-2">
+                            <i class="ph ph-eye"></i> View Preview & Download
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- RIGHT: A4 Live Preview Area -->
+            <div id="preview-section" class="flex-1 flex flex-col h-full overflow-hidden bg-slate-100 rounded-2xl shadow-inner border border-slate-200">
+                
+                <!-- Action Bar -->
+                <div class="bg-white p-4 border-b border-slate-200 flex items-center justify-between shadow-sm z-10">
+                    <h3 class="font-semibold text-slate-700 flex items-center gap-2">
+                        <i class="ph ph-monitor text-blue-500 text-xl"></i> Live Preview
+                    </h3>
+                    <div class="flex gap-2">
+                        <button id="btn-download-img" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-medium text-sm transition-colors flex items-center gap-2">
+                            <i class="ph ph-image"></i> <span class="hidden sm:inline">Download</span> Image
+                        </button>
+                        <button id="btn-download-pdf" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-2 shadow-sm">
+                            <i class="ph ph-file-pdf"></i> <span class="hidden sm:inline">Download</span> PDF
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Preview Container with Scroll -->
+                <div class="flex-1 preview-container relative">
+                    
+                    <!-- The exact A4 Document -->
+                    <div id="a4-preview-wrapper" class="shadow-paper-lg mx-auto">
+                        <!-- Content dynamically injected here by JS -->
+                        <div id="a4-content"></div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-slate-900 text-slate-400 py-6 mt-auto">
+            <div class="max-w-screen-2xl mx-auto px-4 text-center sm:text-left flex flex-col sm:flex-row justify-between items-center gap-4 text-sm">
+                <p>Independent student tool, not affiliated with any institution.</p>
+                <div class="flex gap-4">
+                    <a href="#" class="hover:text-white transition-colors">Privacy Policy</a>
+                    <a href="#" class="hover:text-white transition-colors">Terms of Use</a>
+                </div>
+                <p>© 2026 Student Cover Page Maker. Created by Nipan Chakraborty.</p>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Toast Notification System -->
+    <div id="toast-container"></div>
+
+    <!-- ========================================== -->
+    <!-- JAVASCRIPT APPLICATION LOGIC               -->
+    <!-- ========================================== -->
+    <script>
+        /**
+         * 1. CONFIGURATION
+         */
+        const COLLEGE_CONFIG = {
+            // ==========================================
+            // LOGO CONFIGURATION
+            // Place your logo file in the assets folder.
+            // The app will automatically load it for previews and PDFs.
+            // ==========================================
+            logo: "co.png",
+            loadedLogo: "", // Will hold the base64 preloaded image
+            
+            collegeName: "Techno College of Engineering Agartala",
+            location: "Maheshkhola, Agartala, Tripura",
+            subtitle: "Approved by AICTE & Affiliated to Tripura University",
+            departments: [
+                "Basic Science & Humanities",
+                "Civil Engineering",
+                "Mechanical Engineering",
+                "Electrical Engineering",
+                "Electronics & Communication Engineering",
+                "Computer Science & Engineering"
+            ],
+            branches: [
+                "Computer Science & Technology",
+                "Artificial Intelligence & Machine Learning",
+                "Electronics & Telecommunication Engineering",
+                "Electrical Engineering",
+                "Civil Engineering",
+                "Civil Engineering (Construction Technology)",
+                "Mechanical Engineering"
+            ]
+        };
+
+        /**
+         * 2. CENTRAL STATE
+         */
+        const appState = {
+            formData: {
+                studentName: "",
+                studentId: "",
+                rollNumber: "",
+                registrationNumber: "",
+                courseLevel: "",
+                branch: "",
+                semester: "",
+                subject: "",
+                subjectCode: "",
+                facultyDepartment: "",
+                faculty1Name: "",
+                faculty1Designation: "",
+                faculty2Name: "",
+                faculty2Designation: "",
+                session: "",
+                submissionDate: "",
+                submissionType: ""
+            },
+            selectedTemplate: "format1",
+            hasSecondFaculty: false,
+            isGenerating: false
+        };
+
+        /**
+         * 3. DOM ELEMENTS
+         */
+        const els = {
+            landing: document.getElementById('landing-page'),
+            generator: document.getElementById('generator-page'),
+            btnStart: document.getElementById('btn-start'),
+            btnHome: document.getElementById('btn-back-home'),
+            btnReset: document.getElementById('btn-reset'),
+            form: document.getElementById('cover-form'),
+            inputs: document.querySelectorAll('.live-input'),
+            a4Content: document.getElementById('a4-content'),
+            a4Wrapper: document.getElementById('a4-preview-wrapper'),
+            btnAddFaculty: document.getElementById('btn-add-faculty'),
+            btnRemoveFaculty: document.getElementById('btn-remove-faculty'),
+            secondFacultyContainer: document.getElementById('second-faculty-container'),
+            btnPdf: document.getElementById('btn-download-pdf'),
+            btnImg: document.getElementById('btn-download-img'),
+            btnMobilePreview: document.getElementById('btn-mobile-preview'),
+            previewSection: document.getElementById('preview-section')
+        };
+
+        /**
+         * 4. INITIALIZATION & SETUP
+         */
+        async function initApp() {
+            populateDropdowns();
+            attachEventListeners();
+            initThreeJS();
+            
+            // Preload the logo into base64 to ensure html2canvas captures it perfectly
+            // and provides a fallback if the local file is missing.
+            COLLEGE_CONFIG.loadedLogo = await preloadImage(COLLEGE_CONFIG.logo);
+            
+            updateStateFromDOM(); // Set initial blank state
+            scalePreview(); // Initial scaling
+            window.addEventListener('resize', scalePreview);
+        }
+
+        function preloadImage(url) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous';
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    try {
+                        const dataURL = canvas.toDataURL('image/png');
+                        resolve(dataURL);
+                    } catch (e) {
+                        // Fallback to original URL if canvas is tainted (e.g., local file:// protocol)
+                        resolve(url);
+                    }
+                };
+                img.onerror = () => {
+                    // Fallback to a placeholder if the local image is missing
+                    resolve('https://placehold.co/300x300/1e3a8a/ffffff.png?text=College+Logo&font=playfair-display');
+                };
+                img.src = url;
+            });
+        }
+
+        function populateDropdowns() {
+            const branchSelect = document.getElementById('branch');
+            COLLEGE_CONFIG.branches.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                branchSelect.appendChild(opt);
+            });
+
+            const deptSelect = document.getElementById('facultyDepartment');
+            COLLEGE_CONFIG.departments.forEach(d => {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                deptSelect.appendChild(opt);
+            });
+        }
+
+        // Scale A4 wrapper using CSS zoom/transform for responsive viewing
+        // but keep actual pixel dimensions intact for high quality export.
+        function scalePreview() {
+            const container = document.querySelector('.preview-container');
+            const wrapper = els.a4Wrapper;
+            
+            // Fixed A4 dimensions
+            const A4_WIDTH = 794;
+            const A4_HEIGHT = 1123;
+            
+            // Calculate available width based on parent container to avoid scrollbar layout loops
+            const parentWidth = container.parentElement.clientWidth;
+            // Calculate padding (matches the CSS padding: 1rem left + 1rem right = 32px roughly. Less on mobile)
+            const padding = window.innerWidth < 1024 ? 16 : 32; 
+            const availableWidth = parentWidth - padding;
+
+            // Calculate exact scale
+            let scale = availableWidth / A4_WIDTH;
+            if (scale > 1) scale = 1; // Do not stretch beyond 100% on desktop
+            
+            // Apply scale
+            wrapper.style.transform = `scale(${scale})`;
+            
+            // Fix CSS transform bounding box issue:
+            // CSS scale doesn't shrink the document flow height.
+            // We use negative bottom margin to erase the empty layout space left behind.
+            const emptySpace = A4_HEIGHT - (A4_HEIGHT * scale);
+            wrapper.style.marginBottom = `-${emptySpace}px`;
+            
+            // Reset any inline heights from older implementations
+            container.style.minHeight = '0';
+        }
+
+        /**
+         * 5. EVENT LISTENERS
+         */
+        function attachEventListeners() {
+            // Navigation
+            els.btnStart.addEventListener('click', () => togglePage(true));
+            els.btnHome.addEventListener('click', () => togglePage(false));
+            els.btnReset.addEventListener('click', resetForm);
+            els.btnMobilePreview.addEventListener('click', () => {
+                els.previewSection.scrollIntoView({ behavior: 'smooth' });
+            });
+
+            // Input Changes
+            els.inputs.forEach(input => {
+                const eventType = (input.tagName === 'SELECT' || input.type === 'radio' || input.type === 'date') ? 'change' : 'input';
+                input.addEventListener(eventType, () => {
+                    updateStateFromDOM();
+                });
+            });
+
+            // Second Faculty Toggle
+            els.btnAddFaculty.addEventListener('click', () => {
+                appState.hasSecondFaculty = true;
+                els.secondFacultyContainer.classList.remove('hidden');
+                els.btnAddFaculty.classList.add('hidden');
+                updateStateFromDOM();
+            });
+
+            els.btnRemoveFaculty.addEventListener('click', () => {
+                appState.hasSecondFaculty = false;
+                els.secondFacultyContainer.classList.add('hidden');
+                els.btnAddFaculty.classList.remove('hidden');
+                // Clear 2nd faculty inputs
+                document.getElementById('faculty2Name').value = '';
+                document.getElementById('faculty2Designation').value = '';
+                updateStateFromDOM();
+            });
+
+            // Exports
+            els.btnPdf.addEventListener('click', generatePDF);
+            els.btnImg.addEventListener('click', generateImage);
+        }
+
+        function togglePage(toGenerator) {
+            if (toGenerator) {
+                els.landing.classList.add('hidden-section');
+                els.generator.classList.remove('hidden-section');
+                els.generator.classList.add('fade-enter-active');
+                setTimeout(() => scalePreview(), 100);
+            } else {
+                els.generator.classList.add('hidden-section');
+                els.landing.classList.remove('hidden-section');
+            }
+        }
+
+        /**
+         * 6. STATE MANAGEMENT
+         */
+        function updateStateFromDOM() {
+            // Read Template
+            const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+            appState.selectedTemplate = selectedFormat;
+
+            // Read Text/Select Inputs
+            const keys = Object.keys(appState.formData);
+            keys.forEach(key => {
+                const el = document.getElementById(key);
+                if (el) {
+                    appState.formData[key] = el.value.trim();
+                }
+            });
+
+            // Format Date for display
+            if (appState.formData.submissionDate) {
+                const d = new Date(appState.formData.submissionDate);
+                // Ensure valid date before formatting
+                if(!isNaN(d.getTime())) {
+                     appState.formData.displayDate = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+                } else {
+                     appState.formData.displayDate = "";
+                }
+            } else {
+                appState.formData.displayDate = "";
+            }
+
+            renderPreview();
+        }
+
+        /**
+         * 7. TEMPLATE RENDERING
+         */
+        function renderPreview() {
+            const data = appState.formData;
+            const config = COLLEGE_CONFIG;
+            let html = '';
+
+            if (appState.selectedTemplate === 'format1') {
+                html = renderTemplate1(data, config);
+            } else {
+                html = renderTemplate2(data, config);
+            }
+
+            els.a4Content.innerHTML = html;
+        }
+
+        // Helper to safely output text or a placeholder line
+        const safeText = (text, placeholder = '______________________') => text ? text : `<span style="color:#d1d5db;">${placeholder}</span>`;
+
+        function renderTemplate1(data, config) {
+            return `
+            <div class="a4-template">
+                <div class="f1-border">
+                    
+                    <!-- Top Type -->
+                    <div style="text-align: center; font-weight: bold; font-size: 1.25rem; text-transform: uppercase; margin-bottom: 20px;">
+                        <span>
+                            ${safeText(data.submissionType, 'SUBMISSION TYPE')}
+                        </span>
+                    </div>
+                    
+                    <!-- College Info -->
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <img src="${config.loadedLogo || config.logo}" alt="College Logo" style="height: 120px; width: 120px; object-fit: contain; margin: 0 auto 15px auto;">
+                        <h1 style="font-size: 2.2rem; font-weight: bold; margin: 0; line-height: 1.2; text-transform: uppercase;">
+                            ${config.collegeName}
+                        </h1>
+                        <p style="font-size: 1.1rem; margin: 5px 0;">${config.location}</p>
+                        <p style="font-size: 1rem; margin: 5px 0; font-style: italic;">${config.subtitle}</p>
+                    </div>
+
+                    <!-- Subject Title -->
+                    <div style="text-align: center; margin-top: 30px; margin-bottom: 30px;">
+                        <p style="font-size: 1.2rem; font-weight: bold; margin-bottom: 10px;">A Report On</p>
+                        <h2 style="font-size: 1.8rem; font-weight: bold; text-transform: uppercase; margin: 0; padding: 10px 20px; display: inline-block;">
+                            Subject: ${safeText(data.subject, 'COURSE / SUBJECT TITLE')}
+                        </h2>
+                        ${data.subjectCode ? `<p style="font-size: 1.1rem; margin-top: 10px; font-weight: bold;">Course Code: ${data.subjectCode}</p>` : ''}
+                    </div>
+
+                    <div style="text-align: center; margin-bottom: 40px; padding: 0 10%;">
+                        <p style="font-size: 1.1rem; line-height: 1.5;">
+                            Submitted for the partial fulfillment of the requirement for the award of degree of 
+                            <strong>${safeText(data.courseLevel, 'COURSE LEVEL')}</strong> in 
+                            <strong>${safeText(data.branch, 'BRANCH / SPECIALIZATION')}</strong>
+                        </p>
+                    </div>
+
+                    <!-- Submission Columns -->
+                    <div style="display: flex; justify-content: space-between; margin-top: auto; padding: 0 20px;">
+                        
+                        <!-- Left: To -->
+                        <div style="width: 45%;">
+                            <h3 style="font-size: 1.2rem; font-weight: bold; text-decoration: underline; margin-bottom: 15px;">Submitted To:</h3>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <p style="font-size: 1.1rem; font-weight: bold; margin: 0 0 5px 0;">${safeText(data.faculty1Name, 'Faculty Name')}</p>
+                                <p style="font-size: 1rem; margin: 0 0 5px 0;">${safeText(data.faculty1Designation, 'Designation')}</p>
+                                <p style="font-size: 1rem; margin: 0;">Department of ${safeText(data.facultyDepartment, 'Department')}</p>
+                            </div>
+
+                            ${appState.hasSecondFaculty ? `
+                            <div>
+                                <p style="font-size: 1.1rem; font-weight: bold; margin: 0 0 5px 0;">${safeText(data.faculty2Name, 'Faculty 2 Name')}</p>
+                                <p style="font-size: 1rem; margin: 0 0 5px 0;">${safeText(data.faculty2Designation, 'Designation')}</p>
+                                <p style="font-size: 1rem; margin: 0;">Department of ${safeText(data.facultyDepartment, 'Department')}</p>
+                            </div>
+                            ` : ''}
+                        </div>
+
+                        <!-- Right: By -->
+                        <div style="width: 45%; padding-left: 5%;">
+                            <h3 style="font-size: 1.2rem; font-weight: bold; text-decoration: underline; margin-bottom: 15px;">Submitted By:</h3>
+                            
+                            <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 12px 0;">${safeText(data.studentName, 'Student Name')}</p>
+                            
+                            <div style="font-size: 1.1rem; line-height: 1.6;">
+                                ${data.studentId ? `<p style="margin: 0;"><strong>Student ID:</strong> ${data.studentId}</p>` : ''}
+                                <p style="margin: 0;"><strong>TU Roll No:</strong> ${safeText(data.rollNumber, 'Roll No')}</p>
+                                <p style="margin: 0;"><strong>TU Reg No:</strong> ${safeText(data.registrationNumber, 'Reg No')}</p>
+                                <p style="margin: 0;"><strong>Semester:</strong> ${safeText(data.semester, 'Sem')}</p>
+                                ${data.session ? `<p style="margin: 0;"><strong>Session:</strong> ${data.session}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Date -->
+                    <div style="text-align: center; margin-top: 30px;">
+                        <p style="font-size: 1.1rem; font-weight: bold;">Date of Submission: ${safeText(data.displayDate, 'DD/MM/YYYY')}</p>
+                    </div>
+
+                </div>
+            </div>
+            `;
+        }
+
+        function renderTemplate2(data, config) {
+            return `
+            <div class="a4-template">
+                <div class="f2-border">
+                    
+                    <!-- Header with Logo left, Text right -->
+                    <div style="display: flex; align-items: center; border-bottom: 2px solid black; padding-bottom: 20px; margin-bottom: 30px;">
+                        <img src="${config.loadedLogo || config.logo}" alt="College Logo" style="height: 100px; width: 100px; object-fit: contain; margin-right: 20px;">
+                        <div style="flex-grow: 1; text-align: center;">
+                            <h1 style="font-size: 2rem; font-weight: bold; margin: 0; line-height: 1.1; text-transform: uppercase;">
+                                ${config.collegeName}
+                            </h1>
+                            <p style="font-size: 1.1rem; margin: 5px 0;">${config.location}</p>
+                        </div>
+                    </div>
+
+                    <!-- Type -->
+                    <div style="text-align: center; font-size: 1.3rem; font-weight: bold; text-transform: uppercase; margin-bottom: 30px;">
+                        ${safeText(data.submissionType, 'SUBMISSION TYPE')}
+                    </div>
+
+                    <!-- Subject Info Box -->
+                    <div style="text-align: center; margin-bottom: 40px;">
+                        <h2 style="font-size: 1.8rem; font-weight: bold; margin: 0 0 10px 0;">Subject: ${safeText(data.subject, 'COURSE / SUBJECT TITLE')}</h2>
+                        <p style="font-size: 1.2rem; margin: 0; font-weight: bold;">Course Code: ${safeText(data.subjectCode, 'CODE')}</p>
+                        <p style="font-size: 1.1rem; margin: 10px 0 0 0;">Department of ${safeText(data.branch, 'Branch / Specialization')}</p>
+                    </div>
+
+                    <!-- Details Section -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 40px; margin-top: 20px;">
+                        
+                        <!-- Submitted By (Center) -->
+                        <div style="text-align: center; width: 80%;">
+                            <h3 style="font-size: 1.3rem; font-style: italic; margin-bottom: 15px;">Submitted By</h3>
+                            
+                            <h4 style="font-size: 1.5rem; font-weight: bold; margin: 0 0 15px 0; text-transform: uppercase;">${safeText(data.studentName, 'STUDENT NAME')}</h4>
+                            
+                            <table style="margin: 0 auto; text-align: left; font-size: 1.15rem; border-collapse: collapse;">
+                                <tbody>
+                                    ${data.studentId ? `<tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">Student ID:</td><td>${data.studentId}</td></tr>` : ''}
+                                    <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">TU Roll No:</td><td>${safeText(data.rollNumber, 'Roll No')}</td></tr>
+                                    <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">TU Reg No:</td><td>${safeText(data.registrationNumber, 'Reg No')}</td></tr>
+                                    <tr><td style="padding: 4px 15px 4px 0; font-weight: bold;">Semester:</td><td>${safeText(data.semester, 'Sem')}</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Divider -->
+                        <div style="width: 50px; height: 2px; background-color: black;"></div>
+
+                        <!-- Submitted To (Center) -->
+                        <div style="text-align: center; width: 80%;">
+                            <h3 style="font-size: 1.3rem; font-style: italic; margin-bottom: 15px;">Under the Guidance of</h3>
+                            
+                            <div style="display: flex; justify-content: center; gap: 50px;">
+                                <div>
+                                    <h4 style="font-size: 1.3rem; font-weight: bold; margin: 0 0 5px 0;">${safeText(data.faculty1Name, 'Faculty Name')}</h4>
+                                    <p style="font-size: 1.1rem; margin: 0;">${safeText(data.faculty1Designation, 'Designation')}</p>
+                                </div>
+
+                                ${appState.hasSecondFaculty ? `
+                                <div>
+                                    <h4 style="font-size: 1.3rem; font-weight: bold; margin: 0 0 5px 0;">${safeText(data.faculty2Name, 'Faculty 2 Name')}</h4>
+                                    <p style="font-size: 1.1rem; margin: 0;">${safeText(data.faculty2Designation, 'Designation')}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Bottom Date -->
+                    <div style="text-align: center; margin-top: auto;">
+                        <p style="font-size: 1.1rem;">
+                            <strong>Academic Session:</strong> ${safeText(data.session, 'XXXX-XX')} &nbsp;&nbsp;|&nbsp;&nbsp;
+                            <strong>Date:</strong> ${safeText(data.displayDate, 'DD/MM/YYYY')}
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+            `;
+        }
+
+        /**
+         * 8. VALIDATION & EXPORT LOGIC
+         */
+        function validateForm() {
+            // Required fields array
+            const req = ['studentName', 'courseLevel', 'branch', 'semester', 'subject', 'facultyDepartment', 'faculty1Name', 'submissionDate', 'submissionType'];
+            let isValid = true;
+            let firstMissing = null;
+
+            req.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el.value.trim()) {
+                    isValid = false;
+                    el.classList.add('border-red-500', 'ring-1', 'ring-red-500');
+                    if (!firstMissing) firstMissing = el;
+                } else {
+                    el.classList.remove('border-red-500', 'ring-1', 'ring-red-500');
+                }
+            });
+
+            if (!isValid) {
+                showToast("Please fill in all required fields.", "error");
+                if (firstMissing) {
+                    // Scroll to the first missing field
+                    firstMissing.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    firstMissing.focus();
+                }
+                return false;
+            }
+            return true;
+        }
+
+        function setGenerating(isGenerating, type) {
+            appState.isGenerating = isGenerating;
+            const btn = type === 'pdf' ? els.btnPdf : els.btnImg;
+            const originalText = type === 'pdf' ? '<i class="ph ph-file-pdf"></i> <span class="hidden sm:inline">Download</span> PDF' : '<i class="ph ph-image"></i> <span class="hidden sm:inline">Download</span> Image';
+            
+            if (isGenerating) {
+                btn.disabled = true;
+                btn.innerHTML = `<div class="spinner"></div> Generating...`;
+                btn.classList.add('opacity-75', 'cursor-not-allowed');
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                btn.classList.remove('opacity-75', 'cursor-not-allowed');
+            }
+        }
+
+        // Standardize canvas generation to ensure highest quality
+        async function getRenderedCanvas() {
+            // Force state update to guarantee latest data
+            updateStateFromDOM();
+            
+            const element = els.a4Wrapper;
+            
+            // Temporarily remove transform for accurate capture
+            const originalTransform = element.style.transform;
+            element.style.transform = 'none';
+
+            // Use html2canvas
+            const canvas = await html2canvas(element, {
+                scale: 2, // High resolution
+                useCORS: true,
+                allowTaint: true,
+                logging: false,
+                backgroundColor: '#ffffff'
+            });
+
+            // Restore transform
+            element.style.transform = originalTransform;
+            return canvas;
+        }
+
+        async function generatePDF() {
+            if (!validateForm() || appState.isGenerating) return;
+            
+            try {
+                setGenerating(true, 'pdf');
+                
+                const canvas = await getRenderedCanvas();
+                const imgData = canvas.toDataURL('image/png');
+                
+                // jsPDF parameters: Portrait, millimeters, A4 size
+                const { jsPDF } = window.jspdf;
+                const pdf = new jsPDF('p', 'mm', 'a4');
+                
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save(`${appState.formData.studentName.replace(/\s+/g, '_')}_Cover_Page.pdf`);
+                
+                showToast("PDF Downloaded Successfully!", "success");
+                handlePostDownload();
+
+            } catch (error) {
+                console.error("PDF Generation failed", error);
+                showToast("Error generating PDF. Please try again.", "error");
+            } finally {
+                setGenerating(false, 'pdf');
+            }
+        }
+
+        async function generateImage() {
+            if (!validateForm() || appState.isGenerating) return;
+
+            try {
+                setGenerating(true, 'img');
+                
+                const canvas = await getRenderedCanvas();
+                
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `${appState.formData.studentName.replace(/\s+/g, '_')}_Cover_Page.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+
+                showToast("Image Downloaded Successfully!", "success");
+                handlePostDownload();
+
+            } catch (error) {
+                console.error("Image Generation failed", error);
+                showToast("Error generating image. Please try again.", "error");
+            } finally {
+                setGenerating(false, 'img');
+            }
+        }
+
+        function handlePostDownload() {
+            // Reset form fields after successful download to prep for next student
+            setTimeout(() => {
+                resetFormSpecifics();
+                showToast("Form cleared for the next student.", "info");
+            }, 1500);
+        }
+
+        function resetFormSpecifics() {
+            // Fields to clear (keeping config and template selections intact)
+            const fieldsToClear = [
+                'studentName', 'studentId', 'rollNumber', 'registrationNumber',
+                'courseLevel', 'branch', 'semester', 'subject', 'subjectCode',
+                'facultyDepartment', 'faculty1Name', 'faculty1Designation',
+                'faculty2Name', 'faculty2Designation', 'session', 'submissionDate', 'submissionType'
+            ];
+
+            fieldsToClear.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.tagName === 'SELECT') el.selectedIndex = 0;
+                    else el.value = '';
+                    el.classList.remove('border-red-500', 'ring-1', 'ring-red-500'); // clear errors
+                }
+            });
+
+            // Hide 2nd faculty
+            if (appState.hasSecondFaculty) {
+                els.btnRemoveFaculty.click();
+            }
+
+            updateStateFromDOM();
+        }
+
+        function resetForm() {
+            if(confirm("Are you sure you want to reset all entered information?")) {
+                resetFormSpecifics();
+                showToast("Form reset.", "info");
+            }
+        }
+
+        /**
+         * 9. UI UTILITIES
+         */
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let icon = '<i class="ph ph-info"></i>';
+            if(type === 'success') { icon = '<i class="ph ph-check-circle text-green-400"></i>'; }
+            if(type === 'error') { icon = '<i class="ph ph-warning text-red-400"></i>'; toast.style.borderLeft = "4px solid #ef4444"; }
+
+            toast.className = 'toast';
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Trigger animation
+            setTimeout(() => toast.classList.add('show'), 10);
+            
+            // Remove
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        /**
+         * 10. THREE.JS ANIMATION (Landing Page Only)
+         */
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            
+            // Setup scene, camera, renderer
+            const scene = new THREE.Scene();
+            // Deep sleek blue background
+            scene.background = new THREE.Color(0x0f172a); 
+            // Fog for depth
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.04);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            container.appendChild(renderer.domElement);
+
+            // Lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const dirLight = new THREE.DirectionalLight(0x60a5fa, 0.8);
+            dirLight.position.set(5, 10, 7);
+            scene.add(dirLight);
+
+            const blueLight = new THREE.PointLight(0x3b82f6, 1, 10);
+            blueLight.position.set(-2, 0, 2);
+            scene.add(blueLight);
+
+            // Group to hold the document
+            const docGroup = new THREE.Group();
+
+            // The Document (A4 Paper shape)
+            // A4 Ratio ~ 1:1.414
+            const docGeometry = new THREE.PlaneGeometry(3, 4.242);
+            const docMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, 
+                side: THREE.DoubleSide,
+                roughness: 0.1,
+                metalness: 0.1
+            });
+            const documentMesh = new THREE.Mesh(docGeometry, docMaterial);
+            
+            // Subtle document lines (Simulating text)
+            const lineMat = new THREE.MeshBasicMaterial({ color: 0x94a3b8 });
+            for(let i=0; i<8; i++) {
+                const lineGeo = new THREE.PlaneGeometry(2, 0.05);
+                const line = new THREE.Mesh(lineGeo, lineMat);
+                line.position.set(0, 1.2 - (i * 0.3), 0.01);
+                docGroup.add(line);
+            }
+            // Header box
+            const boxGeo = new THREE.PlaneGeometry(1, 0.4);
+            const boxMat = new THREE.MeshBasicMaterial({ color: 0x3b82f6 });
+            const box = new THREE.Mesh(boxGeo, boxMat);
+            box.position.set(0, 1.7, 0.01);
+            docGroup.add(box);
+
+            docGroup.add(documentMesh);
+            
+            // Tilt document for dramatic effect
+            docGroup.rotation.x = -Math.PI / 6;
+            docGroup.rotation.y = Math.PI / 8;
+            scene.add(docGroup);
+
+            // Floating Geometric Particles (Tech/Academic Vibe)
+            const particles = new THREE.Group();
+            const geoGeometries = [
+                new THREE.IcosahedronGeometry(0.2, 0),
+                new THREE.OctahedronGeometry(0.15, 0),
+                new THREE.BoxGeometry(0.2, 0.2, 0.2)
+            ];
+            
+            const particleMat = new THREE.MeshStandardMaterial({
+                color: 0x60a5fa,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.4
+            });
+
+            for(let i = 0; i < 30; i++) {
+                const geo = geoGeometries[Math.floor(Math.random() * geoGeometries.length)];
+                const mesh = new THREE.Mesh(geo, particleMat);
+                
+                mesh.position.set(
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 15,
+                    (Math.random() - 0.5) * 10 - 5
+                );
+                
+                mesh.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    0
+                );
+                
+                // Custom properties for animation
+                mesh.userData = {
+                    rotSpeedX: (Math.random() - 0.5) * 0.02,
+                    rotSpeedY: (Math.random() - 0.5) * 0.02,
+                    floatSpeed: Math.random() * 0.01 + 0.005,
+                    floatOffset: Math.random() * Math.PI * 2
+                };
+                
+                particles.add(mesh);
+            }
+            scene.add(particles);
+
+            camera.position.z = 7;
+
+            // Mouse interaction setup
+            let mouseX = 0;
+            let mouseY = 0;
+            let targetX = 0;
+            let targetY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                // Normalize mouse position from -1 to 1
+                mouseX = (event.clientX - window.innerWidth / 2) / (window.innerWidth / 2);
+                mouseY = (event.clientY - window.innerHeight / 2) / (window.innerHeight / 2);
+            });
+
+            // Animation Loop
+            const clock = new THREE.Clock();
+
+            function animate() {
+                requestAnimationFrame(animate);
+
+                const time = clock.getElapsedTime();
+
+                // Smoothly interpolate mouse target
+                targetX = targetX + (mouseX - targetX) * 0.05;
+                targetY = targetY + (mouseY - targetY) * 0.05;
+
+                // Document floating and rotation
+                docGroup.position.y = Math.sin(time * 1.5) * 0.2;
+                docGroup.rotation.y = (Math.PI / 8) + targetX * 0.3; // Parallax effect
+                docGroup.rotation.x = (-Math.PI / 6) + targetY * 0.2;
+
+                // Animate particles
+                particles.children.forEach(p => {
+                    p.rotation.x += p.userData.rotSpeedX;
+                    p.rotation.y += p.userData.rotSpeedY;
+                    p.position.y += Math.sin(time + p.userData.floatOffset) * p.userData.floatSpeed;
+                });
+                
+                // Slow rotation of entire particle system
+                particles.rotation.y = time * 0.05;
+
+                renderer.render(scene, camera);
+            }
+
+            // Handle Resize
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+
+            animate();
+        }
+
+        // Boot
+        window.onload = initApp;
+    </script>
+</body>
+</html>
