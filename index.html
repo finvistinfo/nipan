@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Cover Page Maker | Professional Academic Front Pages</title>
+    <title>techno Student Cover Page Maker</title>
     <meta name="description" content="Create a professional academic front page in seconds. Free, client-side, no login required.">
     
     <!-- Tailwind CSS for Styling -->
@@ -304,10 +304,10 @@
                         <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
                             <i class="ph ph-layout"></i> Select Front Page Format
                         </h2>
-                        <div class="grid grid-cols-2 gap-3">
+                        <div class="grid grid-cols-3 gap-3">
                             <label class="cursor-pointer relative">
                                 <input type="radio" name="format" value="format1" class="peer sr-only live-input" checked>
-                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2">
+                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2 h-full">
                                     <div class="w-full aspect-[1/1.4] bg-white border border-slate-300 rounded shadow-sm flex flex-col p-2 gap-1">
                                         <div class="w-full h-1 bg-slate-200"></div>
                                         <div class="w-6 h-6 rounded-full bg-slate-200 mx-auto"></div>
@@ -317,13 +317,13 @@
                                             <div class="w-1/3 h-4 bg-slate-100 border border-slate-200"></div>
                                         </div>
                                     </div>
-                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700">Format 1</span>
+                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700 text-center mt-auto">Format 1</span>
                                 </div>
                             </label>
                             
                             <label class="cursor-pointer relative">
                                 <input type="radio" name="format" value="format2" class="peer sr-only live-input">
-                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2">
+                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2 h-full">
                                     <div class="w-full aspect-[1/1.4] bg-white border border-slate-300 rounded shadow-sm flex flex-col p-2 gap-1">
                                         <div class="flex items-center gap-2 border-b border-slate-200 pb-1">
                                             <div class="w-4 h-4 rounded-full bg-slate-200"></div>
@@ -332,7 +332,25 @@
                                         <div class="w-3/4 h-3 bg-slate-200 mx-auto mt-4"></div>
                                         <div class="w-1/2 h-8 bg-slate-100 border border-slate-200 mx-auto mt-2"></div>
                                     </div>
-                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700">Format 2</span>
+                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700 text-center mt-auto">Format 2</span>
+                                </div>
+                            </label>
+
+                            <!-- Format 3 (New) -->
+                            <label class="cursor-pointer relative">
+                                <input type="radio" name="format" value="format3" class="peer sr-only live-input">
+                                <div class="rounded-xl border-2 border-slate-200 p-3 hover:bg-slate-50 peer-checked:border-blue-500 peer-checked:bg-blue-50 transition-all flex flex-col items-center gap-2 h-full">
+                                    <div class="w-full aspect-[1/1.4] bg-white border border-slate-300 rounded shadow-sm flex flex-col p-2 gap-1 items-center justify-center">
+                                        <div class="w-3/4 h-1 bg-slate-200 mb-1"></div>
+                                        <div class="w-full h-2 bg-slate-200 mb-2"></div>
+                                        <div class="w-6 h-6 rounded-full bg-slate-200 my-2"></div>
+                                        <div class="w-1/2 h-1 bg-slate-200 mb-4"></div>
+                                        <div class="w-1/3 h-1 bg-slate-200 mb-1"></div>
+                                        <div class="w-1/3 h-1 bg-slate-200 mb-4"></div>
+                                        <div class="w-1/3 h-1 bg-slate-200 mb-1"></div>
+                                        <div class="w-1/3 h-1 bg-slate-200"></div>
+                                    </div>
+                                    <span class="font-medium text-sm text-slate-700 peer-checked:text-blue-700 text-center mt-auto">Format 3</span>
                                 </div>
                             </label>
                         </div>
@@ -865,8 +883,10 @@
 
             if (appState.selectedTemplate === 'format1') {
                 html = renderTemplate1(data, config);
-            } else {
+            } else if (appState.selectedTemplate === 'format2') {
                 html = renderTemplate2(data, config);
+            } else {
+                html = renderTemplate3(data, config);
             }
 
             els.a4Content.innerHTML = html;
@@ -1044,6 +1064,121 @@
                     </div>
 
                 </div>
+            </div>
+            `;
+        }
+
+        function renderTemplate3(data, config) {
+            return `
+            <div class="a4-template" style="padding: 45px 40px; display: flex; flex-direction: column; align-items: center; text-align: center; font-family: 'Times New Roman', Times, serif; color: #2d3748; box-sizing: border-box; height: 100%;">
+                
+                <!-- Submission Type -->
+                <h3 style="font-size: 1.35rem; font-weight: bold; margin: 0 0 10px 0;">
+                    ${safeText(data.submissionType, 'SUBMISSION TYPE')}
+                </h3>
+
+                <!-- College Name (Split into two lines if needed based on reference image styling) -->
+                <h1 style="font-size: 2.1rem; font-weight: bold; line-height: 1.25; margin: 0 0 15px 0; max-width: 85%;">
+                    ${config.collegeName.replace('Engineering', 'Engineering<br>')}
+                </h1>
+
+                <!-- Course Title & Code -->
+                <div style="margin-bottom: 20px;">
+                    <p style="font-size: 1.15rem; margin: 0 0 8px 0;">
+                        <span style="font-weight: bold;">Course Title:</span> ${safeText(data.subject, 'Subject / Course Title')}
+                    </p>
+                    <p style="font-size: 1.15rem; margin: 0;">
+                        <span style="font-weight: bold;">Course Code:</span> ${safeText(data.subjectCode, 'Subject Code')}
+                    </p>
+                </div>
+
+                <!-- Logo -->
+                <div style="margin: 5px 0 20px 0;">
+                    <img src="${config.loadedLogo || config.logo}" alt="College Logo" style="height: 115px; width: 115px; object-fit: contain;">
+                </div>
+
+                <!-- Location -->
+                <h3 style="font-size: 1.15rem; font-weight: bold; text-transform: uppercase; margin: 0 0 30px 0;">
+                    ${config.location}
+                </h3>
+
+                <!-- Submitted To Section -->
+                <div style="margin-bottom: 30px; width: 100%;">
+                    <h3 style="font-size: 1.25rem; font-weight: bold; text-decoration: underline; margin: 0 0 15px 0;">
+                        Submitted to
+                    </h3>
+                    
+                    ${appState.hasSecondFaculty ? `
+                    <div style="display: flex; justify-content: center; gap: 40px; margin-bottom: 15px;">
+                        <div>
+                            <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                                ${safeText(data.faculty1Name, 'Faculty Name')}
+                            </p>
+                            <p style="font-size: 1.1rem; margin: 0;">
+                                ${safeText(data.faculty1Designation, 'Designation')}
+                            </p>
+                        </div>
+                        <div>
+                            <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                                ${safeText(data.faculty2Name, 'Faculty 2 Name')}
+                            </p>
+                            <p style="font-size: 1.1rem; margin: 0;">
+                                ${safeText(data.faculty2Designation, 'Designation')}
+                            </p>
+                        </div>
+                    </div>
+                    ` : `
+                    <div style="margin-bottom: 15px;">
+                        <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                            ${safeText(data.faculty1Name, 'Faculty Name')}
+                        </p>
+                        <p style="font-size: 1.1rem; margin: 0;">
+                            ${safeText(data.faculty1Designation, 'Designation')}
+                        </p>
+                    </div>
+                    `}
+
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                        Department of ${safeText(data.facultyDepartment, 'Faculty Department')}
+                    </p>
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0;">
+                        ${config.collegeName}
+                    </p>
+                </div>
+
+                <!-- Submitted By Section -->
+                <div style="width: 100%;">
+                    <h3 style="font-size: 1.25rem; font-weight: bold; text-decoration: underline; margin: 0 0 12px 0;">
+                        Submitted by
+                    </h3>
+                    
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                        ${safeText(data.studentName, 'Student Name')}
+                    </p>
+                    
+                    <div style="font-size: 1.1rem; line-height: 1.5; margin-bottom: 12px;">
+                        ${data.studentId ? `<p style="margin: 0;">Student ID.: ${data.studentId}</p>` : ''}
+                        <p style="margin: 0;">TU Roll No.: ${safeText(data.rollNumber, 'Roll Number')}</p>
+                        ${data.registrationNumber ? `<p style="margin: 0;">TU Reg. No.: ${data.registrationNumber}</p>` : ''}
+                        <p style="margin: 0;">Semester: ${safeText(data.semester, 'Semester')}</p>
+                        <p style="margin: 0;">Academic Session: ${safeText(data.session, 'Academic Session')}</p>
+                    </div>
+
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0 0 5px 0;">
+                        Department of ${safeText(data.branch, 'Branch / Department')}
+                    </p>
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0;">
+                        ${config.collegeName}
+                    </p>
+                </div>
+
+                <!-- Date of Submission -->
+                <div style="margin-top: auto; padding-top: 15px; width: 100%;">
+                    <p style="font-size: 1.15rem; font-weight: bold; margin: 0;">
+                        Date of Submission: ${safeText(data.displayDate, 'DD/MM/YYYY')}
+                    </p>
+                </div>
+
             </div>
             `;
         }
